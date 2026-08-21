@@ -1,0 +1,129 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- ตัวแปรฟังก์ชัน (ตั้งค่า Speed เริ่มต้นเป็น 5.0)
+local isActive = false
+local ghostModel = nil
+local flySpeed = 5.0
+local verticalVelocity = 0
+
+-- 1. สร้าง GUI หลัก
+local screenGui = Instance.new("ScreenGui", CoreGui)
+screenGui.Name = "ControlHub"
+screenGui.ResetOnSpawn = false
+
+-- ปุ่มเปิด/ปิด เมนู
+local toggleBtn = Instance.new("TextButton", screenGui)
+toggleBtn.Size = UDim2.new(0, 80, 0, 40)
+toggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+toggleBtn.Text = "MENU"
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
+
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 300, 0, 500)
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+
+toggleBtn.MouseButton1Click:Connect(function() mainFrame.Visible = not mainFrame.Visible end)
+
+local scrollFrame = Instance.new("ScrollingFrame", mainFrame)
+scrollFrame.Size = UDim2.new(1, -20, 1, -20)
+scrollFrame.Position = UDim2.new(0, 10, 0, 10)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.ScrollBarThickness = 4
+Instance.new("UIListLayout", scrollFrame).Padding = UDim.new(0, 5)
+
+-- ฟังก์ชันสร้างปุ่ม
+local function createBtn(text, color, callback)
+    local btn = Instance.new("TextButton", scrollFrame)
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- 2. ส่วน FLY / DESYNC
+createBtn("START DESYNC (FLY)", Color3.fromRGB(0, 170, 0), function()
+    isActive = not isActive
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if isActive then
+        ghostModel = Instance.new("Part", workspace)
+        ghostModel.Size = Vector3.new(2, 3, 2)
+        ghostModel.Transparency = 1; ghostModel.Anchored = true; ghostModel.CFrame = root.CFrame
+        root.Anchored = true
+        camera.CameraSubject = ghostModel
+    else
+        if ghostModel then root.CFrame = ghostModel.CFrame; ghostModel:Destroy() end
+        root.Anchored = false
+        camera.CameraSubject = char:FindFirstChildOfClass("Humanoid")
+    end
+end)
+
+-- ปุ่ม Up/Down
+local controlsFrame = Instance.new("Frame", scrollFrame)
+controlsFrame.Size = UDim2.new(1, 0, 0, 40)
+controlsFrame.BackgroundTransparency = 1
+local upBtn = Instance.new("TextButton", controlsFrame)
+upBtn.Size = UDim2.new(0.48, 0, 1, 0); upBtn.Position = UDim2.new(0, 0, 0, 0); upBtn.Text = "↑ UP"; upBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); upBtn.Parent = controlsFrame
+local downBtn = Instance.new("TextButton", controlsFrame)
+downBtn.Size = UDim2.new(0.48, 0, 1, 0); downBtn.Position = UDim2.new(0.52, 0, 0, 0); downBtn.Text = "↓ DOWN"; downBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60); downBtn.Parent = controlsFrame
+
+upBtn.MouseButton1Down:Connect(function() verticalVelocity = flySpeed end); upBtn.MouseButton1Up:Connect(function() verticalVelocity = 0 end)
+downBtn.MouseButton1Down:Connect(function() verticalVelocity = -flySpeed end); downBtn.MouseButton1Up:Connect(function() verticalVelocity = 0 end)
+
+-- แสดงค่าความเร็ว
+local speedLabel = Instance.new("TextLabel", scrollFrame)
+speedLabel.Size = UDim2.new(1, 0, 0, 30)
+speedLabel.Text = "Current Speed: 5.0"
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
+
+-- 3. ปุ่ม Kill NBC
+createBtn("Kill NBC", Color3.fromRGB(150, 50, 50), function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/SrzStarOG/Script/main/RUNAWAYS"))()
+end)
+
+-- 4. ปุ่ม Teleport
+local function teleport(cf)
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then TweenService:Create(root, TweenInfo.new(0.5), {CFrame = cf}):Play() end
+end
+
+local points = {
+    {"จุดเริ่มต้น", CFrame.new(438.8, 2069.9, -15322.2)}, {"จุด 1", CFrame.new(653.0, 2068.5, -8082.0)},
+    {"จุด 2", CFrame.new(821.5, 1962.7, -70.2)}, {"จุด 3", CFrame.new(823.2, 2016.8, 1893.5)},
+    {"จุด 4", CFrame.new(843.2, 2030.9, 8904.9)}, {"จุด 5", CFrame.new(320.7, 1938.3, 18835.3)},
+    {"จุด 6", CFrame.new(319.8, 1971.9, 21810.1)}, {"จุด 7", CFrame.new(240.0, 2072.3, 29797.6)},
+    {"จุด 8", CFrame.new(-77.6, 2099.6, 41815.3)}, {"จุด 9", CFrame.new(-271.2, 2101.5, 44593.4)},
+    {"จุด 10", CFrame.new(-607.2, 2016.8, 54646.4)}, {"จุด 11", CFrame.new(-815.1, 1935.2, 68617.9)},
+    {"จุด 12", CFrame.new(-801.7, 1895.7, 83327.8)}
+}
+
+for _, p in pairs(points) do createBtn(p[1], Color3.fromRGB(45, 45, 55), function() teleport(p[2]) end) end
+
+-- Loop เคลื่อนที่
+RunService.RenderStepped:Connect(function()
+    if isActive and ghostModel then
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.MoveDirection.Magnitude > 0 then
+            ghostModel.CFrame = ghostModel.CFrame + (camera.CFrame:VectorToWorldSpace(camera.CFrame:VectorToObjectSpace(hum.MoveDirection)) * flySpeed)
+        end
+        ghostModel.CFrame = ghostModel.CFrame + Vector3.new(0, verticalVelocity, 0)
+    end
+end)
